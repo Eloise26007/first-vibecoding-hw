@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Quest｜大學生的第二人生</title>
+    <style>
+        /* CSS 變數與基礎設定 */
+        :root {
+            --primary-green: #8FBC8F;
+            --light-green: #C1E1C1;
+            --bg-white: #FDFDFD;
+            --text-brown: #5C4033;
+            --border-color: #A67B5B;
+            --nav-bg: #EAE6D7;
+        }
+        
+        * { box-sizing: border-box; font-family: 'Courier New', Courier, monospace, "Microsoft JhengHei"; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: #333;
+            display: flex; justify-content: center;
+            height: 100vh;
+        }
+
+        #app-container {
+            width: 100%; max-width: 480px;
+            background-color: var(--bg-white);
+            height: 100vh; position: relative;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* 頂部資訊列 */
+        #top-bar {
+            background-color: var(--primary-green);
+            color: var(--text-brown);
+            padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; border-bottom: 3px solid var(--border-color);
+            z-index: 10;
+        }
+
+        /* 頁面容器 */
+        .page {
+            flex: 1; overflow-y: auto; display: none; padding: 15px;
+            padding-bottom: 80px; /* 留給底部導覽列的空間 */
+        }
+        .page.active { display: block; }
+
+        /* 小島頁面 */
+        #page-island { padding: 0; position: relative; overflow: hidden; }
+        #island-background {
+            width: 100%; height: 100%;
+            background: url('pictures/background.jpg') center/cover no-repeat;
+            background-color: var(--light-green); /* 圖片未載入時的備用底色 */
+            position: absolute; top: 0; left: 0;
+        }
+        .character-sprite {
+            position: absolute; width: 60px; height: 60px;
+            transition: left 3s linear, top 3s linear;
+            cursor: pointer; z-index: 5;
+            animation: bounce 1.5s infinite alternate ease-in-out;
+        }
+        .character-sprite img { width: 100%; height: 100%; object-fit: contain; }
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        /* 作業頁面 */
+        .form-group { margin-bottom: 10px; }
+        .form-group input, .form-group select, .form-group button {
+            width: 100%; padding: 8px; margin-top: 5px;
+            border: 2px solid var(--border-color); border-radius: 5px;
+            background: var(--bg-white); color: var(--text-brown);
+        }
+        .form-group button {
+            background: var(--primary-green); font-weight: bold; cursor: pointer;
+        }
+        .form-group button:hover { background: var(--light-green); }
+        
+        .filter-tabs { display: flex; gap: 10px; margin: 15px 0; }
+        .filter-btn {
+            flex: 1; padding: 8px; border: 2px solid var(--border-color);
+            background: var(--bg-white); cursor: pointer; border-radius: 5px; font-weight: bold;
+        }
+        .filter-btn.active { background: var(--primary-green); }
+
+        .task-card, .shop-card, .collection-card {
+            border: 2px solid var(--border-color); border-radius: 8px;
+            padding: 10px; margin-bottom: 10px;
+            background-color: #FFF; box-shadow: 2px 2px 0 var(--border-color);
+        }
+        .task-header { display: flex; justify-content: space-between; font-weight: bold; }
+        .task-meta { font-size: 0.9em; color: #666; margin: 5px 0; }
+        .task-actions { display: flex; gap: 5px; margin-top: 10px; }
+        .task-actions button {
+            flex: 1; padding: 5px; border: 1px solid var(--border-color);
+            background: var(--bg-white); cursor: pointer; border-radius: 3px;
+        }
+        .btn-complete { background: var(--light-green) !important; font-weight: bold; }
+        .btn-delete { background: #FFB6C1 !important; }
+
+        /* 商店與收藏頁面 */
+        .shop-list { display: flex; flex-direction: column; gap: 10px; }
+        .shop-card { display: flex; align-items: center; justify-content: space-between; }
+        .shop-card img { width: 50px; height: 50px; object-fit: contain; }
+        .shop-info { flex: 1; margin: 0 10px; }
+        .btn-buy { background: gold; border: 2px solid var(--border-color); padding: 5px 10px; cursor: pointer; font-weight:bold; border-radius:5px;}
+        .btn-buy:disabled { background: #CCC; cursor: not-allowed; }
+
+        .collection-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        }
+        .collection-slot {
+            border: 2px solid var(--border-color); border-radius: 8px;
+            height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #FFF; font-size: 0.8em; text-align: center; position: relative;
+        }
+        .collection-slot img { width: 40px; height: 40px; object-fit: contain; }
+        .exp-bar-bg { width: 80%; height: 6px; background: #EEE; border: 1px solid #999; border-radius: 3px; margin-top: 5px; overflow:hidden;}
+        .exp-bar-fill { height: 100%; background: var(--primary-green); width: 0%; }
+        .locked-slot { background: #DDD; color: #888; }
+
+        /* 底部導覽列 */
+        #bottom-nav {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            display: flex; background-color: var(--nav-bg);
+            border-top: 3px solid var(--border-color); z-index: 10;
+        }
+        .nav-btn {
+            flex: 1; padding: 15px 0; text-align: center; cursor: pointer;
+            font-weight: bold; color: var(--text-brown); border: none;
+            background: none; font-size: 1em;
+        }
+        .nav-btn.active { background-color: var(--light-green); }
+        
+        /* 模態視窗 (Modal) */
+        #modal-overlay {
+            display: none; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.6); z-index: 20; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: var(--bg-white); border: 3px solid var(--border-color);
+            border-radius: 10px; padding: 20px; width: 90%; max-height: 80%; overflow-y: auto;
+        }
+        .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin: 15px 0; }
+        .char-select-item {
+            border: 2px solid #CCC; border-radius: 5px; text-align: center; padding: 5px; cursor: pointer;
+        }
+        .char-select-item.selected { border-color: var(--primary-green); background: var(--light-green); }
+        .char-select-item img { width: 40px; height: 40px; object-fit: contain; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-actions button { flex:1; padding: 10px; border:2px solid var(--border-color); border-radius:5px; cursor:pointer; font-weight:bold;}
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <!-- 頂部資訊列 -->
+    <div id="top-bar">
+        <span>Campus Quest</span>
+        <span>🪙 <span id="coin-display">0</span></span>
+    </div>
+
+    <!-- 1. 小島頁面 -->
+    <div id="page-island" class="page active">
+        <div id="island-background"></div>
+        <div id="island-characters"></div>
+    </div>
+
+    <!-- 2. 作業頁面 -->
+    <div id="page-tasks" class="page">
+        <div class="task-card" style="background-color: var(--light-green);">
+            <div class="form-group">
+                <input type="text" id="task-name" placeholder="作業名稱 (必填)">
+            </div>
+            <div class="form-group">
+                <input type="text" id="task-subject" placeholder="科目 (必填)">
+            </div>
+            <div class="form-group">
+                <input type="date" id="task-date">
+            </div>
+            <div class="form-group">
+                <select id="task-diff">
+                    <option value="easy">簡單 (10金幣/10EXP)</option>
+                    <option value="medium">中等 (25金幣/25EXP)</option>
+                    <option value="hard">困難 (50金幣/50EXP)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button onclick="addTask()">➕ 新增作業</button>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-btn active" id="tab-pending" onclick="setTaskFilter('pending')">待完成</button>
+            <button class="filter-btn" id="tab-completed" onclick="setTaskFilter('completed')">已完成</button>
+        </div>
+
+        <div id="task-list"></div>
+    </div>
+
+    <!-- 3. 商店頁面 -->
+    <div id="page-shop" class="page">
+        <h3>角色商店</h3>
+        <div id="shop-list" class="shop-list"></div>
+    </div>
+
+    <!-- 4. 收藏頁面 -->
+    <div id="page-collection" class="page">
+        <h3>角色收藏 (16格)</h3>
+        <div id="collection-grid" class="collection-grid"></div>
+        
+        <hr style="margin-top: 30px; border-color: var(--border-color);">
+        <button onclick="resetGame()" style="width:100%; padding:10px; background:#FFB6C1; border:2px solid var(--border-color); border-radius:5px; cursor:pointer; font-weight:bold;">⚠️ 重置遊戲資料</button>
+    </div>
+
+    <!-- 底部導覽列 -->
+    <div id="bottom-nav">
+        <button class="nav-btn active" onclick="switchPage('island', this)">🏝️ 小島</button>
+        <button class="nav-btn" onclick="switchPage('tasks', this)">📝 作業</button>
+        <button class="nav-btn" onclick="switchPage('shop', this)">🛒 商店</button>
+        <button class="nav-btn" onclick="switchPage('collection', this)">🎒 收藏</button>
+    </div>
+    
+    <!-- 獎勵視窗 Modal -->
+    <div id="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0;">完成作業！</h3>
+            <p id="reward-info">可獲得: 0 🪙 / 0 EXP</p>
+            <p>請選擇要獲得 EXP 的角色：</p>
+            <div id="char-select-grid" class="char-select-grid"></div>
+            <div class="modal-actions">
+                <button onclick="closeModal()">取消</button>
+                <button onclick="confirmReward()" style="background:var(--primary-green);">確認領取</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 基礎資料設定 ---
+    const CHARACTERS_DB = [
+        { id: 'c0', name: '初心精靈', img: 'pictures/original.gif', rarity: 'common', price: 0 },
+        { id: 'c1', name: '精靈 1', img: 'pictures/1.gif', rarity: 'common', price: 50 },
+        { id: 'c2', name: '精靈 2', img: 'pictures/2.gif', rarity: 'common', price: 50 },
+        { id: 'c3', name: '精靈 3', img: 'pictures/3.gif', rarity: 'common', price: 50 },
+        { id: 'c4', name: '精靈 4', img: 'pictures/4.gif', rarity: 'common', price: 50 },
+        { id: 'c5', name: '精靈 5', img: 'pictures/5.gif', rarity: 'common', price: 50 },
+        { id: 'c6', name: '稀有獸 6', img: 'pictures/6.gif', rarity: 'rare', price: 100 },
+        { id: 'c7', name: '稀有獸 7', img: 'pictures/7.gif', rarity: 'rare', price: 100 },
+        { id: 'c8', name: '稀有獸 8', img: 'pictures/8.gif', rarity: 'rare', price: 100 },
+        { id: 'c9', name: '稀有獸 9', img: 'pictures/9.gif', rarity: 'rare', price: 100 },
+        { id: 'c10', name: '稀有獸 10', img: 'pictures/10.gif', rarity: 'rare', price: 100 },
+        { id: 'c11', name: '傳說使者 11', img: 'pictures/11.gif', rarity: 'special', price: 200 },
+        { id: 'c12', name: '傳說使者 12', img: 'pictures/12.gif', rarity: 'special', price: 200 },
+        { id: 'c13', name: '傳說使者 13', img: 'pictures/13.gif', rarity: 'special', price: 200 },
+        { id: 'c14', name: '傳說使者 14', img: 'pictures/14.gif', rarity: 'special', price: 200 },
+        { id: 'c15', name: '傳說使者 15', img: 'pictures/15.gif', rarity: 'special', price: 200 }
+    ];
+
+    const REWARDS = {
+        'easy': { coins: 10, exp: 10 },
+        'medium': { coins: 25, exp: 25 },
+        'hard': { coins: 50, exp: 50 }
+    };
+
+    // --- 遊戲狀態管理 ---
+    let state = {
+        coins: 0,
+        tasks: [],
+        ownedCharacters: {
+            'c0': { level: 1, exp: 0 } // 初始擁有 c0
+        }
+    };
+    
+    let currentFilter = 'pending';
+    let pendingRewardTask = null;
+    let selectedCharForReward = null;
+
+    // --- 初始化與存檔 ---
+    function init() {
+        const saved = localStorage.getItem('campusQuestState');
+        if (saved) {
+            try { state = JSON.parse(saved); } catch(e) { console.error("存檔讀取失敗", e); }
+        }
+        updateUI();
+        startIslandAnimation();
+    }
+
+    function saveState() {
+        localStorage.setItem('campusQuestState', JSON.stringify(state));
+        updateUI();
+    }
+
+    function resetGame() {
+        if(confirm("確定要重置嗎？所有進度、金幣與作業都會消失，且無法復原！")) {
+            localStorage.removeItem('campusQuestState');
+            location.reload();
+        }
+    }
+
+    // --- UI 更新與頁面切換 ---
+    function switchPage(pageId, btnElement) {
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById('page-' + pageId).classList.add('active');
+        btnElement.classList.add('active');
+    }
+
+    function updateUI() {
+        document.getElementById('coin-display').innerText = state.coins;
+        renderTasks();
+        renderShop();
+        renderCollection();
+        renderIsland();
+    }
+
+    // --- 作業系統 ---
+    function addTask() {
+        const name = document.getElementById('task-name').value.trim();
+        const subject = document.getElementById('task-subject').value.trim();
+        const date = document.getElementById('task-date').value;
+        const diff = document.getElementById('task-diff').value;
+
+        if (!name || !subject || !date) {
+            alert("請填寫完整：作業名稱、科目、截止日期！");
+            return;
+        }
+
+        const newTask = {
+            id: Date.now().toString(),
+            name, subject, date, difficulty: diff,
+            status: 'pending' // pending or completed
+        };
+        state.tasks.push(newTask);
+        saveState();
+        
+        // 清空表單
+        document.getElementById('task-name').value = '';
+        document.getElementById('task-subject').value = '';
+        document.getElementById('task-date').value = '';
+    }
+
+    function setTaskFilter(filter) {
+        currentFilter = filter;
+        document.getElementById('tab-pending').classList.toggle('active', filter === 'pending');
+        document.getElementById('tab-completed').classList.toggle('active', filter === 'completed');
+        renderTasks();
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('task-list');
+        list.innerHTML = '';
+        const filteredTasks = state.tasks.filter(t => t.status === currentFilter);
+        
+        if (filteredTasks.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:#666; margin-top:20px;">${currentFilter === 'pending' ? '目前沒有待完成的作業。' : '還沒有已完成的作業。'}</div>`;
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        filteredTasks.forEach(task => {
+            const isOverdue = task.status === 'pending' && task.date < today;
+            const diffText = {'easy': '簡單', 'medium': '中等', 'hard': '困難'}[task.difficulty];
+            const overdueTag = isOverdue ? `<span style="color:red; font-weight:bold;">[已逾期]</span> ` : '';
+
+            let actionsHtml = '';
+            if (task.status === 'pending') {
+                actionsHtml = `
+                    <button class="btn-complete" onclick="openRewardModal('${task.id}')">✔️ 完成</button>
+                    <button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除</button>
+                `;
+            } else {
+                actionsHtml = `<button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除紀錄</button>`;
+            }
+
+            list.innerHTML += `
+                <div class="task-card">
+                    <div class="task-header">${overdueTag}${task.name} <span>(${diffText})</span></div>
+                    <div class="task-meta">科目: ${task.subject} | 截止: ${task.date}</div>
+                    <div class="task-actions">${actionsHtml}</div>
+                </div>
+            `;
+        });
+    }
+
+    function deleteTask(taskId) {
+        if(confirm("確定要刪除這項作業嗎？")) {
+            state.tasks = state.tasks.filter(t => t.id !== taskId);
+            saveState();
+        }
+    }
+
+    // --- 獎勵與升級系統 ---
+    function openRewardModal(taskId) {
+        const task = state.tasks.find(t => t.id === taskId);
+        if (!task || task.status === 'completed') return;
+
+        pendingRewardTask = task;
+        selectedCharForReward = null;
+        const reward = REWARDS[task.difficulty];
+        
+        document.getElementById('reward-info').innerText = `可獲得: ${reward.coins} 🪙 / ${reward.exp} EXP`;
+        
+        // 渲染角色選擇網格
+        const grid = document.getElementById('char-select-grid');
+        grid.innerHTML = '';
+        Object.keys(state.ownedCharacters).forEach(charId => {
+            const dbChar = CHARACTERS_DB.find(c => c.id === charId);
+            const charData = state.ownedCharacters[charId];
+            
+            const div = document.createElement('div');
+            div.className = 'char-select-item';
+            div.innerHTML = `<img src="${dbChar.img}"><br><small>Lv.${charData.level}</small>`;
+            div.onclick = () => {
+                document.querySelectorAll('.char-select-item').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+                selectedCharForReward = charId;
+            };
+            grid.appendChild(div);
+        });
+
+        document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').style.display = 'none';
+        pendingRewardTask = null;
+    }
+
+    function confirmReward() {
+        if (!selectedCharForReward) {
+            alert("請先選擇一隻角色來獲得 EXP！");
+            return;
+        }
+
+        const reward = REWARDS[pendingRewardTask.difficulty];
+        state.coins += reward.coins;
+        
+        // 處理 EXP 增加與升級
+        let charData = state.ownedCharacters[selectedCharForReward];
+        charData.exp += reward.exp;
+        
+        let leveledUp = false;
+        while(true) {
+            let expNeeded = charData.level * 50;
+            if (charData.exp >= expNeeded) {
+                charData.exp -= expNeeded;
+                charData.level++;
+                leveledUp = true;
+            } else {
+                break;
+            }
+        }
+
+        // 更新作業狀態
+        pendingRewardTask.status = 'completed';
+        
+        saveState();
+        closeModal();
+        
+        if (leveledUp) {
+            alert(`領取成功！角色升級到 Lv.${charData.level}！`);
+        } else {
+            alert("領取成功！");
+        }
+    }
+
+    // --- 商店系統 ---
+    function renderShop() {
+        const list = document.getElementById('shop-list');
+        list.innerHTML = '';
+        let allBought = true;
+
+        CHARACTERS_DB.forEach(char => {
+            if (state.ownedCharacters[char.id]) return; // 已擁有不顯示在商店
+            allBought = false;
+            const canAfford = state.coins >= char.price;
+            
+            list.innerHTML += `
+                <div class="shop-card">
+                    <img src="${char.img}" alt="${char.name}">
+                    <div class="shop-info">
+                        <strong>${char.name}</strong><br>
+                        <small style="color:#666;">價格: ${char.price} 🪙</small>
+                    </div>
+                    <button class="btn-buy" ${!canAfford ? 'disabled' : ''} onclick="buyChar('${char.id}', ${char.price})">
+                        ${canAfford ? '購買' : '金幣不足'}
+                    </button>
+                </div>
+            `;
+        });
+
+        if (allBought) {
+            list.innerHTML = `<div style="text-align:center; color:#666;">商店裡的角色都已解鎖！</div>`;
+        }
+    }
+
+    function buyChar(charId, price) {
+        if (state.coins >= price && !state.ownedCharacters[charId]) {
+            state.coins -= price;
+            state.ownedCharacters[charId] = { level: 1, exp: 0 };
+            saveState();
+            alert("購買成功！角色已加入小島與收藏。");
+        }
+    }
+
+    // --- 收藏頁面 ---
+    function renderCollection() {
+        const grid = document.getElementById('collection-grid');
+        grid.innerHTML = '';
+
+        CHARACTERS_DB.forEach(char => {
+            const ownedData = state.ownedCharacters[char.id];
+            if (ownedData) {
+                const expNeeded = ownedData.level * 50;
+                const percent = Math.floor((ownedData.exp / expNeeded) * 100);
+                grid.innerHTML += `
+                    <div class="collection-slot">
+                        <img src="${char.img}">
+                        <strong>Lv.${ownedData.level}</strong>
+                        <div class="exp-bar-bg"><div class="exp-bar-fill" style="width:${percent}%"></div></div>
+                    </div>
+                `;
+            } else {
+                grid.innerHTML += `<div class="collection-slot locked-slot"><span>???</span></div>`;
+            }
+        });
+    }
+
+    // --- 小島動畫系統 ---
+    function renderIsland() {
+        const container = document.getElementById('island-characters');
+        container.innerHTML = '';
+
+        Object.keys(state.ownedCharacters).forEach(charId => {
+            const dbChar = CHARACTERS_DB.find(c => c.id === charId);
+            const charDiv = document.createElement('div');
+            charDiv.className = 'character-sprite';
+            charDiv.innerHTML = `<img src="${dbChar.img}" draggable="false">`;
+            
+            // 初始隨機位置 (限制在 10%~80% 避免跑出版面)
+            charDiv.style.left = (10 + Math.random() * 70) + '%';
+            charDiv.style.top = (10 + Math.random() * 70) + '%';
+            
+            // 點擊事件
+            charDiv.onclick = () => {
+                const lv = state.ownedCharacters[charId].level;
+                alert(`${dbChar.name}\n目前等級: Lv.${lv}`);
+            };
+
+            container.appendChild(charDiv);
+        });
+    }
+
+    function startIslandAnimation() {
+        setInterval(() => {
+            // 每 3 秒讓角色隨機漫步
+            document.querySelectorAll('.character-sprite').forEach(char => {
+                if (Math.random() > 0.4) { // 60% 機率移動
+                    char.style.left = (10 + Math.random() * 70) + '%';
+                    char.style.top = (10 + Math.random() * 70) + '%';
+                }
+            });
+        }, 3000);
+    }
+
+    // 啟動應用
+    window.onload = init;
+</script>
+
+</body>
+</html>
