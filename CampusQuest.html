@@ -37,7 +37,7 @@
         #top-bar {
             background-color: var(--primary-green);
             color: var(--text-brown);
-            padding: 10px 15px;
+            padding: 12px 15px;
             display: flex; justify-content: space-between; align-items: center;
             font-weight: bold; border-bottom: 3px solid var(--border-color);
             z-index: 10;
@@ -58,11 +58,13 @@
             background-color: var(--light-green); /* 圖片未載入時的備用底色 */
             position: absolute; top: 0; left: 0;
         }
+        
         .character-sprite {
             position: absolute; width: 60px; height: 60px;
             transition: left 3s linear, top 3s linear;
             cursor: pointer; z-index: 5;
             animation: bounce 1.5s infinite alternate ease-in-out;
+            border-radius: 10px; /* 圖片載入失敗時的備用樣式 */
         }
         .character-sprite img { width: 100%; height: 100%; object-fit: contain; }
         @keyframes bounce {
@@ -99,10 +101,11 @@
         .task-actions { display: flex; gap: 5px; margin-top: 10px; }
         .task-actions button {
             flex: 1; padding: 5px; border: 1px solid var(--border-color);
-            background: var(--bg-white); cursor: pointer; border-radius: 3px;
+            background: var(--bg-white); cursor: pointer; border-radius: 3px; font-size: 0.9em;
         }
         .btn-complete { background: var(--light-green) !important; font-weight: bold; }
         .btn-delete { background: #FFB6C1 !important; }
+        .btn-edit { background: #FFF9C4 !important; }
 
         /* 商店與收藏頁面 */
         .shop-list { display: flex; flex-direction: column; gap: 10px; }
@@ -125,6 +128,13 @@
         .exp-bar-fill { height: 100%; background: var(--primary-green); width: 0%; }
         .locked-slot { background: #DDD; color: #888; }
 
+        /* 說明書頁面專屬 */
+        .manual-section {
+            background: #FFF; border: 2px solid var(--border-color); border-radius: 8px;
+            padding: 15px; margin-bottom: 15px; line-height: 1.6;
+        }
+        .manual-section h4 { margin-top: 0; color: var(--primary-green); border-bottom: 2px solid #EEE; padding-bottom: 5px; }
+
         /* 底部導覽列 */
         #bottom-nav {
             position: absolute; bottom: 0; left: 0; width: 100%;
@@ -132,25 +142,23 @@
             border-top: 3px solid var(--border-color); z-index: 10;
         }
         .nav-btn {
-            flex: 1; padding: 15px 0; text-align: center; cursor: pointer;
+            flex: 1; padding: 12px 0; text-align: center; cursor: pointer;
             font-weight: bold; color: var(--text-brown); border: none;
-            background: none; font-size: 1em;
+            background: none; font-size: 0.85em; /* 縮小一點字體以容納5個按鈕 */
         }
         .nav-btn.active { background-color: var(--light-green); }
         
         /* 模態視窗 (Modal) */
-        #modal-overlay {
+        .modal-overlay {
             display: none; position: absolute; top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.6); z-index: 20; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.6); z-index: 30; justify-content: center; align-items: center;
         }
         .modal-box {
             background: var(--bg-white); border: 3px solid var(--border-color);
             border-radius: 10px; padding: 20px; width: 90%; max-height: 80%; overflow-y: auto;
         }
         .char-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin: 15px 0; }
-        .char-select-item {
-            border: 2px solid #CCC; border-radius: 5px; text-align: center; padding: 5px; cursor: pointer;
-        }
+        .char-select-item { border: 2px solid #CCC; border-radius: 5px; text-align: center; padding: 5px; cursor: pointer; }
         .char-select-item.selected { border-color: var(--primary-green); background: var(--light-green); }
         .char-select-item img { width: 40px; height: 40px; object-fit: contain; }
         .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
@@ -192,7 +200,8 @@
                 </select>
             </div>
             <div class="form-group">
-                <button onclick="addTask()">➕ 新增作業</button>
+                <button id="btn-submit-task" onclick="submitTask()">➕ 新增作業</button>
+                <button id="btn-cancel-edit" onclick="cancelEdit()" style="display:none; background:#FFB6C1; margin-top:5px;">取消編輯</button>
             </div>
         </div>
 
@@ -214,28 +223,58 @@
     <div id="page-collection" class="page">
         <h3>角色收藏 (16格)</h3>
         <div id="collection-grid" class="collection-grid"></div>
-        
         <hr style="margin-top: 30px; border-color: var(--border-color);">
         <button onclick="resetGame()" style="width:100%; padding:10px; background:#FFB6C1; border:2px solid var(--border-color); border-radius:5px; cursor:pointer; font-weight:bold;">⚠️ 重置遊戲資料</button>
     </div>
 
-    <!-- 底部導覽列 -->
+    <!-- 5. 說明書頁面 -->
+    <div id="page-manual" class="page">
+        <h3>📖 遊戲說明書</h3>
+        <div class="manual-section">
+            <h4>📝 任務與獎勵</h4>
+            <p>在「作業」頁面記錄你的課業，完成作業即可獲得獎勵：</p>
+            <ul>
+                <li>簡單：10 🪙 / 10 EXP</li>
+                <li>中等：25 🪙 / 25 EXP</li>
+                <li>困難：50 🪙 / 50 EXP</li>
+            </ul>
+        </div>
+        <div class="manual-section">
+            <h4>🎓 角色升級</h4>
+            <p>點擊「完成」作業時，可以選擇將 EXP 灌注給任一已擁有的角色。<br>角色每升一級需要的EXP會越來越高，經驗值滿了會自動升級！</p>
+        </div>
+        <div class="manual-section">
+            <h4>🛒 商店解鎖</h4>
+            <p>累積足夠的金幣後，去「商店」解鎖新角色。稀有度越高越貴！解鎖後角色會立刻出現在「小島」上。</p>
+        </div>
+        <div class="manual-section">
+            <h4>🏝️ 你的小島</h4>
+            <p>所有解鎖的角色都會在首頁小島漫遊，你可以隨時點擊他們查看目前的等級。</p>
+        </div>
+        <div class="manual-section">
+            <h4>⭐ 遊戲宗旨</h4>
+            <p>「把現實的課業壓力，變成遊戲裡的成就感。」<br>核心概念只有三個：<br>打怪升級：寫作業不再枯燥，而是賺金幣、養角色的破關過程。<br>溫柔陪伴：這裡沒有逾期扣分的懲罰，只有可愛的像素角色陪你熬夜。<br>看見努力：你在現實中交出的每一份作業，都會變成小島上越來越熱鬧的夥伴。<br>「讓寫作業變得有期待感，用可愛的小遊戲陪你讀完大學。」<br>謝謝遊玩~🎈🎊🎉</p>
+        </div>
+    </div>
+
+    <!-- 底部導覽列 (改為 5 個按鈕) -->
     <div id="bottom-nav">
         <button class="nav-btn active" onclick="switchPage('island', this)">🏝️ 小島</button>
         <button class="nav-btn" onclick="switchPage('tasks', this)">📝 作業</button>
         <button class="nav-btn" onclick="switchPage('shop', this)">🛒 商店</button>
         <button class="nav-btn" onclick="switchPage('collection', this)">🎒 收藏</button>
+        <button class="nav-btn" onclick="switchPage('manual', this)">📖 說明</button>
     </div>
     
     <!-- 獎勵視窗 Modal -->
-    <div id="modal-overlay">
+    <div id="modal-reward" class="modal-overlay">
         <div class="modal-box">
-            <h3 style="margin-top:0;">完成作業！</h3>
-            <p id="reward-info">可獲得: 0 🪙 / 0 EXP</p>
+            <h3 style="margin-top:0; color: var(--text-brown);">完成作業！</h3>
+            <p id="reward-info" style="font-weight: bold; color: var(--primary-green);">可獲得: 0 🪙 / 0 EXP</p>
             <p>請選擇要獲得 EXP 的角色：</p>
             <div id="char-select-grid" class="char-select-grid"></div>
             <div class="modal-actions">
-                <button onclick="closeModal()">取消</button>
+                <button onclick="closeRewardModal()">取消</button>
                 <button onclick="confirmReward()" style="background:var(--primary-green);">確認領取</button>
             </div>
         </div>
@@ -269,24 +308,42 @@
         'hard': { coins: 50, exp: 50 }
     };
 
-    // --- 遊戲狀態管理 ---
-    let state = {
+    // --- 遊戲狀態管理與存檔保護 ---
+    const defaultState = {
         coins: 0,
         tasks: [],
-        ownedCharacters: {
-            'c0': { level: 1, exp: 0 } // 初始擁有 c0
-        }
+        ownedCharacters: { 'c0': { level: 1, exp: 0 } }
     };
+    
+    // 深拷貝預設值
+    let state = JSON.parse(JSON.stringify(defaultState));
     
     let currentFilter = 'pending';
     let pendingRewardTask = null;
     let selectedCharForReward = null;
+    let editingTaskId = null; // 紀錄正在編輯的作業ID
 
-    // --- 初始化與存檔 ---
+    // 取得本地時區的今天日期字串 (解決 UTC 提前一天的問題)
+    function getLocalDateString() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function init() {
-        const saved = localStorage.getItem('campusQuestState');
-        if (saved) {
-            try { state = JSON.parse(saved); } catch(e) { console.error("存檔讀取失敗", e); }
+        try {
+            const saved = localStorage.getItem('campusQuestState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // 存檔資料檢查與保護，避免異常資料導致遊戲壞掉
+                state.coins = typeof parsed.coins === 'number' ? parsed.coins : defaultState.coins;
+                state.tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+                state.ownedCharacters = parsed.ownedCharacters || defaultState.ownedCharacters;
+            }
+        } catch(e) { 
+            console.error("存檔讀取失敗，使用預設狀態", e); 
         }
         updateUI();
         startIslandAnimation();
@@ -321,8 +378,8 @@
         renderIsland();
     }
 
-    // --- 作業系統 ---
-    function addTask() {
+    // --- 作業系統 (包含新增與編輯) ---
+    function submitTask() {
         const name = document.getElementById('task-name').value.trim();
         const subject = document.getElementById('task-subject').value.trim();
         const date = document.getElementById('task-date').value;
@@ -333,18 +390,61 @@
             return;
         }
 
-        const newTask = {
-            id: Date.now().toString(),
-            name, subject, date, difficulty: diff,
-            status: 'pending' // pending or completed
-        };
-        state.tasks.push(newTask);
+        if (editingTaskId) {
+            // 編輯模式
+            const task = state.tasks.find(t => t.id === editingTaskId);
+            if(task) {
+                task.name = name;
+                task.subject = subject;
+                task.date = date;
+                // 若已完成，修改難度不追溯獎勵（依規格書 5.5）
+                task.difficulty = diff; 
+            }
+            editingTaskId = null;
+            document.getElementById('btn-submit-task').innerText = "➕ 新增作業";
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+        } else {
+            // 新增模式
+            const newTask = {
+                id: Date.now().toString(),
+                name, subject, date, difficulty: diff,
+                status: 'pending' 
+            };
+            state.tasks.push(newTask);
+        }
+        
         saveState();
         
         // 清空表單
         document.getElementById('task-name').value = '';
         document.getElementById('task-subject').value = '';
         document.getElementById('task-date').value = '';
+    }
+
+    function editTask(taskId) {
+        const task = state.tasks.find(t => t.id === taskId);
+        if(!task) return;
+        
+        document.getElementById('task-name').value = task.name;
+        document.getElementById('task-subject').value = task.subject;
+        document.getElementById('task-date').value = task.date;
+        document.getElementById('task-diff').value = task.difficulty;
+        
+        editingTaskId = taskId;
+        document.getElementById('btn-submit-task').innerText = "💾 儲存修改";
+        document.getElementById('btn-cancel-edit').style.display = 'block';
+        
+        // 讓畫面捲回頂部方便編輯
+        document.getElementById('page-tasks').scrollTop = 0;
+    }
+
+    function cancelEdit() {
+        editingTaskId = null;
+        document.getElementById('task-name').value = '';
+        document.getElementById('task-subject').value = '';
+        document.getElementById('task-date').value = '';
+        document.getElementById('btn-submit-task').innerText = "➕ 新增作業";
+        document.getElementById('btn-cancel-edit').style.display = 'none';
     }
 
     function setTaskFilter(filter) {
@@ -364,7 +464,7 @@
             return;
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
 
         filteredTasks.forEach(task => {
             const isOverdue = task.status === 'pending' && task.date < today;
@@ -375,6 +475,7 @@
             if (task.status === 'pending') {
                 actionsHtml = `
                     <button class="btn-complete" onclick="openRewardModal('${task.id}')">✔️ 完成</button>
+                    <button class="btn-edit" onclick="editTask('${task.id}')">✏️ 編輯</button>
                     <button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除</button>
                 `;
             } else {
@@ -394,6 +495,7 @@
     function deleteTask(taskId) {
         if(confirm("確定要刪除這項作業嗎？")) {
             state.tasks = state.tasks.filter(t => t.id !== taskId);
+            if(editingTaskId === taskId) cancelEdit();
             saveState();
         }
     }
@@ -401,6 +503,7 @@
     // --- 獎勵與升級系統 ---
     function openRewardModal(taskId) {
         const task = state.tasks.find(t => t.id === taskId);
+        // 防呆：如果找不到或已完成，阻止開啟
         if (!task || task.status === 'completed') return;
 
         pendingRewardTask = task;
@@ -409,7 +512,6 @@
         
         document.getElementById('reward-info').innerText = `可獲得: ${reward.coins} 🪙 / ${reward.exp} EXP`;
         
-        // 渲染角色選擇網格
         const grid = document.getElementById('char-select-grid');
         grid.innerHTML = '';
         Object.keys(state.ownedCharacters).forEach(charId => {
@@ -418,7 +520,8 @@
             
             const div = document.createElement('div');
             div.className = 'char-select-item';
-            div.innerHTML = `<img src="${dbChar.img}"><br><small>Lv.${charData.level}</small>`;
+            // 加入圖片載入失敗的保護
+            div.innerHTML = `<img src="${dbChar.img}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';"><br><small>Lv.${charData.level}</small>`;
             div.onclick = () => {
                 document.querySelectorAll('.char-select-item').forEach(el => el.classList.remove('selected'));
                 div.classList.add('selected');
@@ -427,15 +530,18 @@
             grid.appendChild(div);
         });
 
-        document.getElementById('modal-overlay').style.display = 'flex';
+        document.getElementById('modal-reward').style.display = 'flex';
     }
 
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
+    function closeRewardModal() {
+        document.getElementById('modal-reward').style.display = 'none';
         pendingRewardTask = null;
     }
 
     function confirmReward() {
+        // 二重防呆：確保作業狀態未被改變
+        if (!pendingRewardTask || pendingRewardTask.status === 'completed') return;
+
         if (!selectedCharForReward) {
             alert("請先選擇一隻角色來獲得 EXP！");
             return;
@@ -444,7 +550,6 @@
         const reward = REWARDS[pendingRewardTask.difficulty];
         state.coins += reward.coins;
         
-        // 處理 EXP 增加與升級
         let charData = state.ownedCharacters[selectedCharForReward];
         charData.exp += reward.exp;
         
@@ -460,11 +565,9 @@
             }
         }
 
-        // 更新作業狀態
         pendingRewardTask.status = 'completed';
-        
         saveState();
-        closeModal();
+        closeRewardModal();
         
         if (leveledUp) {
             alert(`領取成功！角色升級到 Lv.${charData.level}！`);
@@ -480,13 +583,13 @@
         let allBought = true;
 
         CHARACTERS_DB.forEach(char => {
-            if (state.ownedCharacters[char.id]) return; // 已擁有不顯示在商店
+            if (state.ownedCharacters[char.id]) return; 
             allBought = false;
             const canAfford = state.coins >= char.price;
             
             list.innerHTML += `
                 <div class="shop-card">
-                    <img src="${char.img}" alt="${char.name}">
+                    <img src="${char.img}" alt="${char.name}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#ccc';">
                     <div class="shop-info">
                         <strong>${char.name}</strong><br>
                         <small style="color:#666;">價格: ${char.price} 🪙</small>
@@ -524,7 +627,7 @@
                 const percent = Math.floor((ownedData.exp / expNeeded) * 100);
                 grid.innerHTML += `
                     <div class="collection-slot">
-                        <img src="${char.img}">
+                        <img src="${char.img}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';">
                         <strong>Lv.${ownedData.level}</strong>
                         <div class="exp-bar-bg"><div class="exp-bar-fill" style="width:${percent}%"></div></div>
                     </div>
@@ -535,36 +638,40 @@
         });
     }
 
-    // --- 小島動畫系統 ---
+    // --- 小島動畫系統優化 (避免畫面切換時角色被重置) ---
     function renderIsland() {
         const container = document.getElementById('island-characters');
-        container.innerHTML = '';
 
         Object.keys(state.ownedCharacters).forEach(charId => {
             const dbChar = CHARACTERS_DB.find(c => c.id === charId);
-            const charDiv = document.createElement('div');
-            charDiv.className = 'character-sprite';
-            charDiv.innerHTML = `<img src="${dbChar.img}" draggable="false">`;
             
-            // 初始隨機位置 (限制在 10%~80% 避免跑出版面)
-            charDiv.style.left = (10 + Math.random() * 70) + '%';
-            charDiv.style.top = (10 + Math.random() * 70) + '%';
+            // 檢查是否已經存在該角色的元素，如果已經存在就不重新建立 (保留原始動畫與位置)
+            let charDiv = document.getElementById('sprite-' + charId);
             
-            // 點擊事件
-            charDiv.onclick = () => {
-                const lv = state.ownedCharacters[charId].level;
-                alert(`${dbChar.name}\n目前等級: Lv.${lv}`);
-            };
+            if (!charDiv) {
+                charDiv = document.createElement('div');
+                charDiv.id = 'sprite-' + charId;
+                charDiv.className = 'character-sprite';
+                // 加入載入失敗預防
+                charDiv.innerHTML = `<img src="${dbChar.img}" draggable="false" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';">`;
+                
+                charDiv.style.left = (10 + Math.random() * 70) + '%';
+                charDiv.style.top = (10 + Math.random() * 70) + '%';
+                
+                charDiv.onclick = () => {
+                    const lv = state.ownedCharacters[charId].level;
+                    alert(`${dbChar.name}\n目前等級: Lv.${lv}`);
+                };
 
-            container.appendChild(charDiv);
+                container.appendChild(charDiv);
+            }
         });
     }
 
     function startIslandAnimation() {
         setInterval(() => {
-            // 每 3 秒讓角色隨機漫步
             document.querySelectorAll('.character-sprite').forEach(char => {
-                if (Math.random() > 0.4) { // 60% 機率移動
+                if (Math.random() > 0.4) {
                     char.style.left = (10 + Math.random() * 70) + '%';
                     char.style.top = (10 + Math.random() * 70) + '%';
                 }
@@ -572,7 +679,6 @@
         }, 3000);
     }
 
-    // 啟動應用
     window.onload = init;
 </script>
 
