@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus Quest</title>
+    <title>Campus Quest｜大學生的第二人生</title>
     <style>
         /* CSS 變數與基礎設定 */
         :root {
@@ -46,7 +46,7 @@
         /* 頁面容器 */
         .page {
             flex: 1; overflow-y: auto; display: none; padding: 15px;
-            padding-bottom: 80px; /* 留給底部導覽列的空間 */
+            padding-bottom: 80px;
         }
         .page.active { display: block; }
 
@@ -55,16 +55,53 @@
         #island-background {
             width: 100%; height: 100%;
             background: url('pictures/background.jpg') center/cover no-repeat;
-            background-color: var(--light-green); /* 圖片未載入時的備用底色 */
+            background-color: var(--light-green);
             position: absolute; top: 0; left: 0;
         }
         
+        /* 考試倒數面板 (已縮小並移至左上角，支援滾動) */
+        #exam-panel {
+            position: absolute; top: 10px; left: 10px;
+            width: auto; max-width: 180px; max-height: 200px; overflow-y: auto;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid var(--border-color); border-radius: 8px;
+            padding: 8px; font-size: 0.85em; z-index: 10;
+            box-shadow: 2px 2px 0 var(--border-color);
+            display: flex; flex-direction: column; gap: 8px;
+            color: var(--text-brown);
+        }
+        
+        /* 自訂滾動條讓面板更精緻 */
+        #exam-panel::-webkit-scrollbar { width: 5px; }
+        #exam-panel::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        
+        .exam-item {
+            border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;
+        }
+        .exam-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .exam-item-header { font-weight: bold; font-size: 1.05em; margin-bottom: 2px; }
+        .exam-item-days { color: red; font-weight: bold; font-size: 1.1em;}
+        .exam-item-actions { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap;}
+        .exam-item-actions button {
+            padding: 3px 6px; font-size: 0.85em; border-radius: 4px; 
+            border: 1px solid var(--border-color); cursor: pointer; font-weight: bold;
+        }
+
+        /* 迎賓對話框 */
+        #welcome-bubble {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95); border: 3px solid var(--primary-green);
+            border-radius: 15px; padding: 20px; text-align: center;
+            color: var(--text-brown); z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: opacity 0.5s ease-in-out; pointer-events: none;
+        }
+
         .character-sprite {
             position: absolute; width: 60px; height: 60px;
-            transition: left 3s linear, top 3s linear;
+            transition: left 3s linear, top 3s linear, width 0.5s, height 0.5s;
             cursor: pointer; z-index: 5;
             animation: bounce 1.5s infinite alternate ease-in-out;
-            border-radius: 10px; /* 圖片載入失敗時的備用樣式 */
+            border-radius: 10px;
         }
         .character-sprite img { width: 100%; height: 100%; object-fit: contain; }
         @keyframes bounce {
@@ -79,9 +116,7 @@
             border: 2px solid var(--border-color); border-radius: 5px;
             background: var(--bg-white); color: var(--text-brown);
         }
-        .form-group button {
-            background: var(--primary-green); font-weight: bold; cursor: pointer;
-        }
+        .form-group button { background: var(--primary-green); font-weight: bold; cursor: pointer; }
         .form-group button:hover { background: var(--light-green); }
         
         .filter-tabs { display: flex; gap: 10px; margin: 15px 0; }
@@ -93,8 +128,7 @@
 
         .task-card, .shop-card, .collection-card {
             border: 2px solid var(--border-color); border-radius: 8px;
-            padding: 10px; margin-bottom: 10px;
-            background-color: #FFF; box-shadow: 2px 2px 0 var(--border-color);
+            padding: 10px; margin-bottom: 10px; background-color: #FFF; box-shadow: 2px 2px 0 var(--border-color);
         }
         .task-header { display: flex; justify-content: space-between; font-weight: bold; }
         .task-meta { font-size: 0.9em; color: #666; margin: 5px 0; }
@@ -107,7 +141,17 @@
         .btn-delete { background: #FFB6C1 !important; }
         .btn-edit { background: #FFF9C4 !important; }
 
-        /* 商店與收藏頁面 */
+        /* 商店頁面：抽獎區 */
+        .gacha-card {
+            background: #FFF9C4; border: 2px dashed #A67B5B;
+            border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px;
+        }
+        .gacha-card button {
+            background: gold; border: 2px solid var(--border-color); border-radius: 5px;
+            padding: 8px 15px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%;
+        }
+        .gacha-card button:hover { background: #FFD700; }
+
         .shop-list { display: flex; flex-direction: column; gap: 10px; }
         .shop-card { display: flex; align-items: center; justify-content: space-between; }
         .shop-card img { width: 50px; height: 50px; object-fit: contain; }
@@ -115,12 +159,11 @@
         .btn-buy { background: gold; border: 2px solid var(--border-color); padding: 5px 10px; cursor: pointer; font-weight:bold; border-radius:5px;}
         .btn-buy:disabled { background: #CCC; cursor: not-allowed; }
 
-        .collection-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-        }
+        /* 收藏與說明書 */
+        .collection-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .collection-slot {
-            border: 2px solid var(--border-color); border-radius: 8px;
-            height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 2px solid var(--border-color); border-radius: 8px; height: 90px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: #FFF; font-size: 0.8em; text-align: center; position: relative;
         }
         .collection-slot img { width: 40px; height: 40px; object-fit: contain; }
@@ -128,7 +171,6 @@
         .exp-bar-fill { height: 100%; background: var(--primary-green); width: 0%; }
         .locked-slot { background: #DDD; color: #888; }
 
-        /* 說明書頁面專屬 */
         .manual-section {
             background: #FFF; border: 2px solid var(--border-color); border-radius: 8px;
             padding: 15px; margin-bottom: 15px; line-height: 1.6;
@@ -144,7 +186,7 @@
         .nav-btn {
             flex: 1; padding: 12px 0; text-align: center; cursor: pointer;
             font-weight: bold; color: var(--text-brown); border: none;
-            background: none; font-size: 0.85em; /* 縮小一點字體以容納5個按鈕 */
+            background: none; font-size: 0.85em; 
         }
         .nav-btn.active { background-color: var(--light-green); }
         
@@ -177,6 +219,16 @@
     <!-- 1. 小島頁面 -->
     <div id="page-island" class="page active">
         <div id="island-background"></div>
+        
+        <!-- 考試倒數面板 -->
+        <div id="exam-panel" style="display: none;"></div>
+        
+        <!-- 迎賓對話框 -->
+        <div id="welcome-bubble" style="display: none;">
+            <h3 style="margin-top:0;">✨ 快去寫作業累積獎勵吧！</h3>
+            <p style="font-size: 0.9em; margin-bottom: 0;">不知從何開始？<br>請先點擊下方 <strong>【📖 說明】</strong> 了解玩法喔！</p>
+        </div>
+
         <div id="island-characters"></div>
     </div>
 
@@ -199,9 +251,13 @@
                     <option value="hard">困難 (50金幣/50EXP)</option>
                 </select>
             </div>
-            <div class="form-group">
-                <button id="btn-submit-task" onclick="submitTask()">➕ 新增作業</button>
-                <button id="btn-cancel-edit" onclick="cancelEdit()" style="display:none; background:#FFB6C1; margin-top:5px;">取消編輯</button>
+            <!-- 把考試按鈕整合進作業表單區域 -->
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <button id="btn-submit-task" onclick="submitTask()" style="flex: 2;">➕ 新增作業</button>
+                <button id="btn-add-exam" onclick="openExamModal()" style="flex: 1; background: #FFF9C4; color: var(--text-brown);">📅 新增考試</button>
+            </div>
+            <div class="form-group" style="margin-top:0;">
+                <button id="btn-cancel-edit" onclick="cancelEdit()" style="display:none; background:#FFB6C1;">取消編輯</button>
             </div>
         </div>
 
@@ -215,7 +271,14 @@
 
     <!-- 3. 商店頁面 -->
     <div id="page-shop" class="page">
-        <h3>角色商店</h3>
+        <!-- 抽獎區 -->
+        <div class="gacha-card">
+            <h3 style="margin: 0; color: #D2691E;">🎁 驚喜抽抽樂</h3>
+            <p style="font-size: 0.9em; margin: 10px 0;">不知道買誰？花費 <strong>100 🪙</strong><br>隨機召喚一隻尚未擁有的夥伴！</p>
+            <button onclick="drawGacha()">🎰 抽一隻！ (100 🪙)</button>
+        </div>
+
+        <h3 style="border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">角色商店</h3>
         <div id="shop-list" class="shop-list"></div>
     </div>
 
@@ -233,19 +296,19 @@
         <div class="manual-section">
             <h4>📝 任務與獎勵</h4>
             <p>在「作業」頁面記錄你的課業，完成作業即可獲得獎勵：</p>
-            <ul>
-                <li>簡單：10 🪙 / 10 EXP</li>
-                <li>中等：25 🪙 / 25 EXP</li>
-                <li>困難：50 🪙 / 50 EXP</li>
-            </ul>
+            <ul><li>簡單：10 🪙 / 10 EXP</li><li>中等：25 🪙 / 25 EXP</li><li>困難：50 🪙 / 50 EXP</li></ul>
         </div>
         <div class="manual-section">
             <h4>🎓 角色升級</h4>
-            <p>點擊「完成」作業時，可以選擇將 EXP 灌注給任一已擁有的角色。<br>角色每升一級需要的EXP會越來越高，經驗值滿了會自動升級！</p>
+            <p>點擊「完成」作業時，可以選擇將 EXP 灌注給任一已擁有的角色。<br>角色每升一級需要的EXP會越來越高，經驗值滿了會自動升級！<strong>角色等級越高，在小島上的體型就會越大隻喔！</strong></p>
         </div>
         <div class="manual-section">
-            <h4>🛒 商店解鎖</h4>
-            <p>累積足夠的金幣後，去「商店」解鎖新角色。稀有度越高越貴！解鎖後角色會立刻出現在「小島」上。</p>
+            <h4>🎯 考試倒數</h4>
+            <p>在「作業」頁面點擊【📅 新增考試】。如果在死線前點擊「提早準備完成」，系統會加碼送出 <strong>50 金幣與 50 EXP</strong> 的大獎賞！</p>
+        </div>
+        <div class="manual-section">
+            <h4>🛒 商店與抽卡</h4>
+            <p>用金幣解鎖新角色，也可以去商店最上方試試手氣，用 100 🪙 隨機抽出一隻未擁有的夥伴！</p>
         </div>
         <div class="manual-section">
             <h4>🏝️ 你的小島</h4>
@@ -257,7 +320,7 @@
         </div>
     </div>
 
-    <!-- 底部導覽列 (改為 5 個按鈕) -->
+    <!-- 底部導覽列 -->
     <div id="bottom-nav">
         <button class="nav-btn active" onclick="switchPage('island', this)">🏝️ 小島</button>
         <button class="nav-btn" onclick="switchPage('tasks', this)">📝 作業</button>
@@ -266,10 +329,10 @@
         <button class="nav-btn" onclick="switchPage('manual', this)">📖 說明</button>
     </div>
     
-    <!-- 獎勵視窗 Modal -->
+    <!-- 獎勵視窗 Modal (共用：作業完成 & 考試早鳥) -->
     <div id="modal-reward" class="modal-overlay">
         <div class="modal-box">
-            <h3 style="margin-top:0; color: var(--text-brown);">完成作業！</h3>
+            <h3 style="margin-top:0; color: var(--text-brown);" id="reward-title">完成作業！</h3>
             <p id="reward-info" style="font-weight: bold; color: var(--primary-green);">可獲得: 0 🪙 / 0 EXP</p>
             <p>請選擇要獲得 EXP 的角色：</p>
             <div id="char-select-grid" class="char-select-grid"></div>
@@ -279,10 +342,27 @@
             </div>
         </div>
     </div>
+
+    <!-- 考試設定 Modal -->
+    <div id="modal-exam" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color: var(--text-brown);">📅 新增考試倒數</h3>
+            <p style="font-size: 0.9em; color:#666;">在死線前提早準備完可領取大獎！</p>
+            <div class="form-group">
+                <input type="text" id="exam-subject" placeholder="考試名稱 (例：微積分期末考)">
+            </div>
+            <div class="form-group">
+                <input type="date" id="exam-date">
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeExamModal()">取消</button>
+                <button onclick="saveExam()" style="background:var(--primary-green);">新增倒數</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-    // --- 基礎資料設定 ---
     const CHARACTERS_DB = [
         { id: 'c0', name: '初心精靈', img: 'pictures/original.gif', rarity: 'common', price: 0 },
         { id: 'c1', name: '精靈 1', img: 'pictures/1.gif', rarity: 'common', price: 50 },
@@ -308,22 +388,19 @@
         'hard': { coins: 50, exp: 50 }
     };
 
-    // --- 遊戲狀態管理與存檔保護 ---
     const defaultState = {
         coins: 0,
         tasks: [],
-        ownedCharacters: { 'c0': { level: 1, exp: 0 } }
+        ownedCharacters: { 'c0': { level: 1, exp: 0 } },
+        exams: [] // 改為支援多個考試的陣列
     };
     
-    // 深拷貝預設值
     let state = JSON.parse(JSON.stringify(defaultState));
-    
     let currentFilter = 'pending';
-    let pendingRewardTask = null;
+    let pendingRewardTask = null; // 可為作業物件 或 { isExam: true, examId: '...' }
     let selectedCharForReward = null;
-    let editingTaskId = null; // 紀錄正在編輯的作業ID
+    let editingTaskId = null;
 
-    // 取得本地時區的今天日期字串 (解決 UTC 提前一天的問題)
     function getLocalDateString() {
         const d = new Date();
         const year = d.getFullYear();
@@ -337,16 +414,22 @@
             const saved = localStorage.getItem('campusQuestState');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // 存檔資料檢查與保護，避免異常資料導致遊戲壞掉
                 state.coins = typeof parsed.coins === 'number' ? parsed.coins : defaultState.coins;
                 state.tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
                 state.ownedCharacters = parsed.ownedCharacters || defaultState.ownedCharacters;
+                
+                // 相容性處理：把舊版的單一 exam 轉移到新的 exams 陣列
+                if (parsed.exam && !parsed.exams) {
+                    state.exams = [{ id: Date.now().toString(), subject: parsed.exam.subject, date: parsed.exam.date }];
+                } else {
+                    state.exams = Array.isArray(parsed.exams) ? parsed.exams : [];
+                }
             }
-        } catch(e) { 
-            console.error("存檔讀取失敗，使用預設狀態", e); 
-        }
+        } catch(e) { console.error("存檔讀取失敗", e); }
+        
         updateUI();
         startIslandAnimation();
+        showWelcomeBubble();
     }
 
     function saveState() {
@@ -361,11 +444,9 @@
         }
     }
 
-    // --- UI 更新與頁面切換 ---
     function switchPage(pageId, btnElement) {
         document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-        
         document.getElementById('page-' + pageId).classList.add('active');
         btnElement.classList.add('active');
     }
@@ -376,9 +457,121 @@
         renderShop();
         renderCollection();
         renderIsland();
+        renderExamPanel();
     }
 
-    // --- 作業系統 (包含新增與編輯) ---
+    // --- 迎賓對話框 ---
+    function showWelcomeBubble() {
+        const bubble = document.getElementById('welcome-bubble');
+        bubble.style.display = 'block';
+        bubble.style.opacity = '1';
+        setTimeout(() => {
+            bubble.style.opacity = '0';
+            setTimeout(() => bubble.style.display = 'none', 500);
+        }, 4000);
+    }
+
+    // --- 考試倒數系統 (多重倒數) ---
+    function renderExamPanel() {
+        const panel = document.getElementById('exam-panel');
+        if (!state.exams || state.exams.length === 0) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        panel.style.display = 'flex';
+        panel.innerHTML = '';
+        const today = new Date(getLocalDateString());
+
+        // 照日期排序，越近的越上面
+        const sortedExams = [...state.exams].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        sortedExams.forEach(exam => {
+            const examDate = new Date(exam.date);
+            const diffTime = examDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            let contentHTML = '';
+            if (diffDays < 0) {
+                contentHTML = `
+                    <div class="exam-item-header">${exam.subject}</div>
+                    <div style="font-size:0.9em; color:#666;">已經結束囉</div>
+                    <div class="exam-item-actions"><button style="background:#EEE;" onclick="clearExam('${exam.id}')">清除</button></div>
+                `;
+            } else if (diffDays === 0) {
+                contentHTML = `
+                    <div class="exam-item-header">${exam.subject}</div>
+                    <div style="font-size:0.9em; color:var(--primary-green); font-weight:bold;">🔥 就是今天！</div>
+                    <div class="exam-item-actions"><button style="background:#EEE;" onclick="clearExam('${exam.id}')">清除</button></div>
+                `;
+            } else {
+                contentHTML = `
+                    <div class="exam-item-header">${exam.subject}</div>
+                    <div style="font-size:0.9em;">倒數 <span class="exam-item-days">${diffDays}</span> 天</div>
+                    <div class="exam-item-actions">
+                        <button style="background:var(--light-green);" onclick="finishExamEarly('${exam.id}')">✅ 早鳥獎勵</button>
+                        <button style="background:#FFB6C1;" onclick="clearExam('${exam.id}')">取消</button>
+                    </div>
+                `;
+            }
+            panel.innerHTML += `<div class="exam-item">${contentHTML}</div>`;
+        });
+    }
+
+    function openExamModal() { document.getElementById('modal-exam').style.display = 'flex'; }
+    function closeExamModal() { document.getElementById('modal-exam').style.display = 'none'; }
+    
+    function saveExam() {
+        const subject = document.getElementById('exam-subject').value.trim();
+        const date = document.getElementById('exam-date').value;
+        if(!subject || !date) { alert('請填寫完整考試資訊！'); return; }
+        if(date < getLocalDateString()) { alert('考試日期不能早於今天！'); return; }
+        
+        state.exams.push({ id: Date.now().toString(), subject, date });
+        saveState();
+        closeExamModal();
+        
+        // 清空欄位
+        document.getElementById('exam-subject').value = '';
+        document.getElementById('exam-date').value = '';
+        
+        alert("已成功加入考試倒數，可以回小島首頁查看！");
+    }
+
+    function clearExam(examId) {
+        if(confirm("確定要取消或清除這個考試倒數嗎？")) {
+            state.exams = state.exams.filter(e => e.id !== examId);
+            saveState();
+        }
+    }
+
+    function finishExamEarly(examId) {
+        pendingRewardTask = { isExam: true, examId: examId, status: 'pending' };
+        selectedCharForReward = null;
+        
+        document.getElementById('reward-title').innerText = "🎉 考前準備完成！";
+        document.getElementById('reward-info').innerText = `獲得大獎賞: 50 🪙 / 50 EXP`;
+        
+        const grid = document.getElementById('char-select-grid');
+        grid.innerHTML = '';
+        Object.keys(state.ownedCharacters).forEach(charId => {
+            const dbChar = CHARACTERS_DB.find(c => c.id === charId);
+            const charData = state.ownedCharacters[charId];
+            const div = document.createElement('div');
+            div.className = 'char-select-item';
+            div.innerHTML = `<img src="${dbChar.img}" onerror="this.style.display='none';"><br><small>Lv.${charData.level}</small>`;
+            div.onclick = () => {
+                document.querySelectorAll('.char-select-item').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+                selectedCharForReward = charId;
+            };
+            grid.appendChild(div);
+        });
+
+        document.getElementById('modal-reward').style.display = 'flex';
+    }
+
+    // --- 作業系統 ---
     function submitTask() {
         const name = document.getElementById('task-name').value.trim();
         const subject = document.getElementById('task-subject').value.trim();
@@ -391,31 +584,18 @@
         }
 
         if (editingTaskId) {
-            // 編輯模式
             const task = state.tasks.find(t => t.id === editingTaskId);
             if(task) {
-                task.name = name;
-                task.subject = subject;
-                task.date = date;
-                // 若已完成，修改難度不追溯獎勵（依規格書 5.5）
-                task.difficulty = diff; 
+                task.name = name; task.subject = subject; task.date = date; task.difficulty = diff; 
             }
             editingTaskId = null;
             document.getElementById('btn-submit-task').innerText = "➕ 新增作業";
             document.getElementById('btn-cancel-edit').style.display = 'none';
         } else {
-            // 新增模式
-            const newTask = {
-                id: Date.now().toString(),
-                name, subject, date, difficulty: diff,
-                status: 'pending' 
-            };
-            state.tasks.push(newTask);
+            state.tasks.push({ id: Date.now().toString(), name, subject, date, difficulty: diff, status: 'pending' });
         }
         
         saveState();
-        
-        // 清空表單
         document.getElementById('task-name').value = '';
         document.getElementById('task-subject').value = '';
         document.getElementById('task-date').value = '';
@@ -424,7 +604,6 @@
     function editTask(taskId) {
         const task = state.tasks.find(t => t.id === taskId);
         if(!task) return;
-        
         document.getElementById('task-name').value = task.name;
         document.getElementById('task-subject').value = task.subject;
         document.getElementById('task-date').value = task.date;
@@ -433,17 +612,13 @@
         editingTaskId = taskId;
         document.getElementById('btn-submit-task').innerText = "💾 儲存修改";
         document.getElementById('btn-cancel-edit').style.display = 'block';
-        
-        // 讓畫面捲回頂部方便編輯
         document.getElementById('page-tasks').scrollTop = 0;
     }
 
     function cancelEdit() {
         editingTaskId = null;
-        document.getElementById('task-name').value = '';
-        document.getElementById('task-subject').value = '';
-        document.getElementById('task-date').value = '';
-        document.getElementById('btn-submit-task').innerText = "➕ 新增作業";
+        document.getElementById('task-name').value = ''; document.getElementById('task-subject').value = '';
+        document.getElementById('task-date').value = ''; document.getElementById('btn-submit-task').innerText = "➕ 新增作業";
         document.getElementById('btn-cancel-edit').style.display = 'none';
     }
 
@@ -465,30 +640,23 @@
         }
 
         const today = getLocalDateString();
-
         filteredTasks.forEach(task => {
             const isOverdue = task.status === 'pending' && task.date < today;
             const diffText = {'easy': '簡單', 'medium': '中等', 'hard': '困難'}[task.difficulty];
             const overdueTag = isOverdue ? `<span style="color:red; font-weight:bold;">[已逾期]</span> ` : '';
 
-            let actionsHtml = '';
-            if (task.status === 'pending') {
-                actionsHtml = `
-                    <button class="btn-complete" onclick="openRewardModal('${task.id}')">✔️ 完成</button>
-                    <button class="btn-edit" onclick="editTask('${task.id}')">✏️ 編輯</button>
-                    <button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除</button>
-                `;
-            } else {
-                actionsHtml = `<button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除紀錄</button>`;
-            }
+            let actionsHtml = task.status === 'pending' 
+                ? `<button class="btn-complete" onclick="openTaskRewardModal('${task.id}')">✔️ 完成</button>
+                   <button class="btn-edit" onclick="editTask('${task.id}')">✏️ 編輯</button>
+                   <button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️</button>`
+                : `<button class="btn-delete" onclick="deleteTask('${task.id}')">🗑️ 刪除紀錄</button>`;
 
             list.innerHTML += `
                 <div class="task-card">
                     <div class="task-header">${overdueTag}${task.name} <span>(${diffText})</span></div>
                     <div class="task-meta">科目: ${task.subject} | 截止: ${task.date}</div>
                     <div class="task-actions">${actionsHtml}</div>
-                </div>
-            `;
+                </div>`;
         });
     }
 
@@ -500,16 +668,16 @@
         }
     }
 
-    // --- 獎勵與升級系統 ---
-    function openRewardModal(taskId) {
+    // --- 獎勵共用系統 ---
+    function openTaskRewardModal(taskId) {
         const task = state.tasks.find(t => t.id === taskId);
-        // 防呆：如果找不到或已完成，阻止開啟
         if (!task || task.status === 'completed') return;
 
         pendingRewardTask = task;
         selectedCharForReward = null;
         const reward = REWARDS[task.difficulty];
         
+        document.getElementById('reward-title').innerText = "完成作業！";
         document.getElementById('reward-info').innerText = `可獲得: ${reward.coins} 🪙 / ${reward.exp} EXP`;
         
         const grid = document.getElementById('char-select-grid');
@@ -517,11 +685,9 @@
         Object.keys(state.ownedCharacters).forEach(charId => {
             const dbChar = CHARACTERS_DB.find(c => c.id === charId);
             const charData = state.ownedCharacters[charId];
-            
             const div = document.createElement('div');
             div.className = 'char-select-item';
-            // 加入圖片載入失敗的保護
-            div.innerHTML = `<img src="${dbChar.img}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';"><br><small>Lv.${charData.level}</small>`;
+            div.innerHTML = `<img src="${dbChar.img}" onerror="this.style.display='none';"><br><small>Lv.${charData.level}</small>`;
             div.onclick = () => {
                 document.querySelectorAll('.char-select-item').forEach(el => el.classList.remove('selected'));
                 div.classList.add('selected');
@@ -539,44 +705,60 @@
     }
 
     function confirmReward() {
-        // 二重防呆：確保作業狀態未被改變
         if (!pendingRewardTask || pendingRewardTask.status === 'completed') return;
+        if (!selectedCharForReward) { alert("請先選擇一隻角色來獲得 EXP！"); return; }
 
-        if (!selectedCharForReward) {
-            alert("請先選擇一隻角色來獲得 EXP！");
-            return;
+        let rewardCoins = 0, rewardExp = 0;
+
+        if (pendingRewardTask.isExam) {
+            rewardCoins = 50; rewardExp = 50;
+            // 領完從多重倒數陣列中清除
+            state.exams = state.exams.filter(e => e.id !== pendingRewardTask.examId);
+        } else {
+            const reward = REWARDS[pendingRewardTask.difficulty];
+            rewardCoins = reward.coins; rewardExp = reward.exp;
+            pendingRewardTask.status = 'completed';
         }
 
-        const reward = REWARDS[pendingRewardTask.difficulty];
-        state.coins += reward.coins;
-        
+        state.coins += rewardCoins;
         let charData = state.ownedCharacters[selectedCharForReward];
-        charData.exp += reward.exp;
+        charData.exp += rewardExp;
         
         let leveledUp = false;
         while(true) {
             let expNeeded = charData.level * 50;
             if (charData.exp >= expNeeded) {
-                charData.exp -= expNeeded;
-                charData.level++;
-                leveledUp = true;
-            } else {
-                break;
-            }
+                charData.exp -= expNeeded; charData.level++; leveledUp = true;
+            } else { break; }
         }
 
-        pendingRewardTask.status = 'completed';
         saveState();
         closeRewardModal();
         
-        if (leveledUp) {
-            alert(`領取成功！角色升級到 Lv.${charData.level}！`);
-        } else {
-            alert("領取成功！");
-        }
+        if (leveledUp) alert(`領取成功！角色升級到 Lv.${charData.level}！體型也變大了！`);
+        else alert("領取成功！");
     }
 
-    // --- 商店系統 ---
+    // --- 商店與抽卡系統 ---
+    function drawGacha() {
+        const cost = 100;
+        if (state.coins < cost) { alert("金幣不足 100 🪙！"); return; }
+        
+        const unowned = CHARACTERS_DB.filter(c => !state.ownedCharacters[c.id]);
+        if (unowned.length === 0) { alert("太神啦！你已經收集到所有角色了！"); return; }
+
+        if(!confirm(`確定要花費 ${cost} 🪙 進行驚喜抽角嗎？`)) return;
+
+        state.coins -= cost;
+        const randIndex = Math.floor(Math.random() * unowned.length);
+        const char = unowned[randIndex];
+        
+        state.ownedCharacters[char.id] = { level: 1, exp: 0 };
+        saveState();
+
+        alert(`🎉 恭喜抽中：${char.name}！\n已加入你的小島與收藏櫃。`);
+    }
+
     function renderShop() {
         const list = document.getElementById('shop-list');
         list.innerHTML = '';
@@ -586,30 +768,23 @@
             if (state.ownedCharacters[char.id]) return; 
             allBought = false;
             const canAfford = state.coins >= char.price;
-            
             list.innerHTML += `
                 <div class="shop-card">
-                    <img src="${char.img}" alt="${char.name}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#ccc';">
+                    <img src="${char.img}" alt="${char.name}" onerror="this.style.display='none';">
                     <div class="shop-info">
-                        <strong>${char.name}</strong><br>
-                        <small style="color:#666;">價格: ${char.price} 🪙</small>
+                        <strong>${char.name}</strong><br><small style="color:#666;">價格: ${char.price} 🪙</small>
                     </div>
                     <button class="btn-buy" ${!canAfford ? 'disabled' : ''} onclick="buyChar('${char.id}', ${char.price})">
                         ${canAfford ? '購買' : '金幣不足'}
                     </button>
-                </div>
-            `;
+                </div>`;
         });
-
-        if (allBought) {
-            list.innerHTML = `<div style="text-align:center; color:#666;">商店裡的角色都已解鎖！</div>`;
-        }
+        if (allBought) list.innerHTML = `<div style="text-align:center; color:#666;">商店裡的角色都已解鎖！</div>`;
     }
 
     function buyChar(charId, price) {
         if (state.coins >= price && !state.ownedCharacters[charId]) {
-            state.coins -= price;
-            state.ownedCharacters[charId] = { level: 1, exp: 0 };
+            state.coins -= price; state.ownedCharacters[charId] = { level: 1, exp: 0 };
             saveState();
             alert("購買成功！角色已加入小島與收藏。");
         }
@@ -619,7 +794,6 @@
     function renderCollection() {
         const grid = document.getElementById('collection-grid');
         grid.innerHTML = '';
-
         CHARACTERS_DB.forEach(char => {
             const ownedData = state.ownedCharacters[char.id];
             if (ownedData) {
@@ -627,44 +801,43 @@
                 const percent = Math.floor((ownedData.exp / expNeeded) * 100);
                 grid.innerHTML += `
                     <div class="collection-slot">
-                        <img src="${char.img}" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';">
+                        <img src="${char.img}" onerror="this.style.display='none';">
                         <strong>Lv.${ownedData.level}</strong>
                         <div class="exp-bar-bg"><div class="exp-bar-fill" style="width:${percent}%"></div></div>
-                    </div>
-                `;
+                    </div>`;
             } else {
                 grid.innerHTML += `<div class="collection-slot locked-slot"><span>???</span></div>`;
             }
         });
     }
 
-    // --- 小島動畫系統優化 (避免畫面切換時角色被重置) ---
+    // --- 小島動畫與體型成長 ---
     function renderIsland() {
         const container = document.getElementById('island-characters');
 
         Object.keys(state.ownedCharacters).forEach(charId => {
             const dbChar = CHARACTERS_DB.find(c => c.id === charId);
+            const lv = state.ownedCharacters[charId].level;
             
-            // 檢查是否已經存在該角色的元素，如果已經存在就不重新建立 (保留原始動畫與位置)
+            // 體型計算公式：預設 60px，每升一級增加 8px，最大限制到 130px
+            const newSize = Math.min(130, 60 + (lv - 1) * 8);
+
             let charDiv = document.getElementById('sprite-' + charId);
-            
             if (!charDiv) {
                 charDiv = document.createElement('div');
                 charDiv.id = 'sprite-' + charId;
                 charDiv.className = 'character-sprite';
-                // 加入載入失敗預防
-                charDiv.innerHTML = `<img src="${dbChar.img}" draggable="false" onerror="this.style.display='none'; this.parentElement.style.backgroundColor='#A67B5B';">`;
-                
-                charDiv.style.left = (10 + Math.random() * 70) + '%';
-                charDiv.style.top = (10 + Math.random() * 70) + '%';
+                charDiv.innerHTML = `<img src="${dbChar.img}" draggable="false" onerror="this.style.display='none';">`;
+                charDiv.style.left = (10 + Math.random() * 60) + '%';
+                charDiv.style.top = (30 + Math.random() * 50) + '%';
                 
                 charDiv.onclick = () => {
-                    const lv = state.ownedCharacters[charId].level;
                     alert(`${dbChar.name}\n目前等級: Lv.${lv}`);
                 };
-
                 container.appendChild(charDiv);
             }
+            charDiv.style.width = newSize + 'px';
+            charDiv.style.height = newSize + 'px';
         });
     }
 
@@ -672,8 +845,8 @@
         setInterval(() => {
             document.querySelectorAll('.character-sprite').forEach(char => {
                 if (Math.random() > 0.4) {
-                    char.style.left = (10 + Math.random() * 70) + '%';
-                    char.style.top = (10 + Math.random() * 70) + '%';
+                    char.style.left = (10 + Math.random() * 60) + '%';
+                    char.style.top = (30 + Math.random() * 50) + '%';
                 }
             });
         }, 3000);
